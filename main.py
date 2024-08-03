@@ -112,6 +112,9 @@ def exploit(host):
             print("\n", response.text, "\n")
     except Exception as e:
         print(f"{RED}Error occurred: {e}{END}")
+        print(f"{RED}\n[-] The application is not exploitable\n {END}")
+        print(f"{RED}[-] The status code is: {status_code}{END}")
+        print("\n", response.text, "\n")
     finally:
         stop_event.set()
         spinner_thread.join()
