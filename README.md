@@ -28,7 +28,7 @@ BadAuth0 is a tool designed to test unauthenticated account creation on Auth0 en
 
 Run the script using the following command:
 ```bash
-python main.py
+python main.py example.com
 ```
 
 ## License
