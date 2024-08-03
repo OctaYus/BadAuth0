@@ -1,11 +1,9 @@
-import subprocess
 import requests
 import sys
 import os
 import urllib3
 import time
 import threading
-from subprocess import run
 
 # ANSI color codes for terminal output
 BLUE = "\033[0;34m"
