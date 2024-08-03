@@ -6,6 +6,7 @@ import time
 import threading
 
 # ANSI color codes for terminal output
+
 BLUE = "\033[0;34m"
 RED = "\033[91m"
 GREEN = "\033[32m"
