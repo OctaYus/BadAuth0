@@ -100,7 +100,7 @@ def mail_verify(host, mail):
         'Sec-Fetch-Site': 'none',
         'Sec-Fetch-User': '?1',
         'Priority': 'u=0, i',
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
     }
 
     payload = {
