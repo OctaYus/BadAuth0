@@ -11,7 +11,7 @@ GREEN = "\033[32m"  # Green color code
 END = "\033[0m"     # Reset color
 
 # Banner
-print(f"""{GREEN}
+print(rf"""{GREEN}
   ____            _    _   _   _ _   _      ___
  | __ )  __ _  __| |  / \ | | | | |_| |__  / _ \
  |  _ \ / _` |/ _` | / _ \| | | | __| '_ \| | | |
