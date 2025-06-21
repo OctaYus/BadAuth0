@@ -22,7 +22,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def print_banner():
     """Display the tool banner"""
-    print(f"""{Colors.CYAN}{Colors.BOLD}
+    print(rf"""{Colors.CYAN}{Colors.BOLD}
   ____            _    _   _   _ _   _      ___  
  | __ )  __ _  __| |  / \ | | | | |_| |__  / _ \ 
  |  _ \ / _` |/ _` | / _ \| | | | __| '_ \| | | |
