@@ -6,70 +6,62 @@ BadAuth0 is a security testing tool designed to identify vulnerabilities in Auth
 
 - Tests for unauthenticated account creation vulnerabilities
 - Identifies misconfigured Auth0 endpoints
-- Supports single email and bulk email list testing
-- Generates detailed output reports
-- Configurable output directory
+- Bulk domain list testing
+- Verbose mode for detailed output
+- Results saved to a configurable output directory
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/OctaYus/BadAuth0.git
-   ```
+### go install (recommended)
 
-2. Navigate to the project directory:
-   ```bash
-   cd BadAuth0
-   ```
+```bash
+go install github.com/OctaYus/BadAuth0@latest
+```
 
-3. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Then run it as:
+```bash
+BadAuth0 -l domains.txt -e test@example.com
+```
+
+### Build from source
+
+```bash
+git clone https://github.com/OctaYus/BadAuth0.git
+cd BadAuth0
+go build -o badauth0 .
+```
 
 ## Usage
 
-Basic command structure:
 ```bash
-python main.py -d <domain> [-e <email> | -l <email_list>] [-o <output_dir>] [-v]
+BadAuth0 -l <domains_file> -e <email> [-o <output_dir>] [-v]
 ```
 
-### Required Arguments:
-- `-d`, `--domain`: Target domain (e.g., example.com)
+### Arguments
 
-### Target Selection (use one):
-- `-e`, `--email`: Single email address to test
-- `-l`, `--list`: File containing list of email addresses to test
+| Flag | Description | Required |
+|------|-------------|----------|
+| `-l` | File containing list of target domains | Yes |
+| `-e` | Test email address for account creation | Yes |
+| `-o` | Output directory (default: `./output`) | No |
+| `-v` | Enable verbose output | No |
 
-### Optional Arguments:
-- `-o`, `--output`: Custom output directory (default: ./output)
-- `-v`, `--verbose`: Enable verbose output for debugging
+### Examples
 
-### Examples:
+Test a list of domains:
+```bash
+BadAuth0 -l domains.txt -e test@example.com
+```
 
-1. Test single email address:
-   ```bash
-   python main.py -d example.com -e test@example.com
-   ```
-
-2. Test list of email addresses:
-   ```bash
-   python main.py -d example.com -l emails.txt -o results
-   ```
-
-3. Test with verbose output:
-   ```bash
-   python main.py -d example.com -l emails.txt -v
-   ```
+With custom output directory and verbose mode:
+```bash
+BadAuth0 -l domains.txt -e test@example.com -o results -v
+```
 
 ## Output
 
-The tool generates:
-- Credentials file containing successful account creations
-- Status reports for each attempt
-- Verbose debugging information when enabled
-
-All output is saved in the specified directory (default: ./output)
+Results are saved in the output directory (default: `./output`):
+- `vulnerable_domains.txt` — domains where account creation succeeded, with credentials used
 
 ## License
 
